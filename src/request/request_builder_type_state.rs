@@ -17,42 +17,47 @@ pub struct NoUrl;
 
 #[derive(Default, Clone)]
 pub struct Url(String);
+
+#[derive(Default, Clone)]
+pub struct NoMethod;
+
+#[derive(Default, Clone)]
+pub struct Method(String);
 // endregion: --- States
 
-// Make the RequestBuilder generic over type U, which is the url type
+// Make the RequestBuilder generic over type U, which is the "url" type
+// To enforce "method", make it generic over M as well:
 #[derive(Default, Clone)]
-pub struct RequestBuilder<U> {
+pub struct RequestBuilder<U, M> {
     url: U,
-    method: Option<String>,
+    method: M,
     headers: Vec<(String, String)>,  // (name, value)
     body: Option<String>,
 }
 
 // Implement new() for the NoUrl type
-impl RequestBuilder<NoUrl> {
+impl RequestBuilder<NoUrl, NoMethod> {
     pub fn new() -> Self {
         RequestBuilder::default()
     }
 }
 
 // Move RequestBuilder::build into a specialised case, and remove the run-time check:
-impl RequestBuilder<Url> {
+impl RequestBuilder<Url, Method> {
     pub fn build(self) -> Result<Request, Box<dyn Error>> {
-        let method = self.method.unwrap_or_else(|| "GET".to_string());
-
         Ok(Request {
             url: self.url.0,  // from Url(String), which is the specific generic type
-            method,
+            method: self.method.0,  // from Method(String)
             headers: self.headers,
             body: self.body,
         })
     }
 }
 
-impl<U> RequestBuilder<U> {
+impl<U, M> RequestBuilder<U, M> {
 
     // Return type is now RequestBuilder<Url>
-    pub fn url(self, url: impl Into<String>) -> RequestBuilder<Url> {
+    pub fn url(self, url: impl Into<String>) -> RequestBuilder<Url, M> {
         RequestBuilder {
             url: Url(url.into()),
             method: self.method,
@@ -61,9 +66,13 @@ impl<U> RequestBuilder<U> {
         }
     }
 
-    pub fn method(mut self, method: impl Into<String>) -> Self {
-        self.method = Some(method.into());
-        self
+    pub fn method(self, method: impl Into<String>) -> RequestBuilder<U, Method> {
+        RequestBuilder {
+            url: self.url,
+            method: Method(method.into()),
+            headers: self.headers,
+            body: self.body,
+        }
     }
 
     pub fn body(mut self, body: impl Into<String>) -> Self {

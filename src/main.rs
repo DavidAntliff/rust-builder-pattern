@@ -20,6 +20,8 @@ fn task_demo() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+// Because the non-consuming builder performed a clone internally,
+// you can call the same builder multiple times.
 fn demo_non_consuming() -> Result<(), Box<dyn Error>> {
     println!("Non-Consuming Builder:");
     use crate::request::request_builder_non_consuming::RequestBuilder;
@@ -34,8 +36,6 @@ fn demo_non_consuming() -> Result<(), Box<dyn Error>> {
         .build()?;
     println!("1: {req:#?}");
 
-    // Because the non-consuming builder performed a clone internally,
-    // you call the same builder multiple times:
     req_builder.header("Client-Version", "1.2");
     let req = req_builder.build()?;
     println!("2: {req:#?}");
@@ -43,6 +43,8 @@ fn demo_non_consuming() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+// The main point of the consuming builder is that an explicit .clone() is
+// needed if you want to use the builder multiple times.
 fn demo_consuming() -> Result<(), Box<dyn Error>> {
     println!("Consuming Builder:");
     use crate::request::request_builder_consuming::RequestBuilder;
@@ -54,9 +56,6 @@ fn demo_consuming() -> Result<(), Box<dyn Error>> {
     let req_builder = req_builder
         .header("token", "user_uuid.exp.sign");
     // do more stuff...
-
-    // The main point of the consuming builder is that an explicit .clone() is
-    // needed if you want to use it multiple times:
     let req = req_builder
         .clone().build()?;
     println!("Consuming 1: {req:#?}");
@@ -70,6 +69,7 @@ fn demo_consuming() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+// Both .url() and .method() are required, otherwise the code does not compile
 fn demo_type_state() -> Result<(), Box<dyn Error>> {
     println!("Type State Builder:");
     use crate::request::request_builder_type_state::RequestBuilder;
@@ -77,7 +77,9 @@ fn demo_type_state() -> Result<(), Box<dyn Error>> {
     let req_builder = RequestBuilder::new()
         // commenting out the .url() will cause a compiler error:
         .url("https://some-url.com/task/123")
-        .method("GET");
+        // commenting out the .method() will cause a compiler error:
+        .method("GET")
+        ;
 
     let req = req_builder
         //.seal()
