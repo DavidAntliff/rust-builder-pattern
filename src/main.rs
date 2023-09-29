@@ -88,10 +88,10 @@ fn demo_type_state() -> Result<(), Box<dyn Error>> {
         .seal();
 
     // .seal() plays nicely with .clone():
-    let req = req_builder.clone().build()?;
+    let req = req_builder.clone().build();
     println!("{req:#?}");
 
-    let req = req_builder.build()?;
+    let req = req_builder.build();
     println!("{req:#?}");
 
     Ok(())

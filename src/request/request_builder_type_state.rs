@@ -5,8 +5,6 @@
 // This can increase the binary size.
 // Moves in new() are optimised by the compiler.
 
-use std::result::Result;
-use std::error::Error;
 use crate::request::Request;
 use core::marker::PhantomData;
 
@@ -70,13 +68,14 @@ impl<U, M> RequestBuilder<U, M, NotSealed> {
 // Move RequestBuilder::build into a specialised case, and remove the run-time check.
 // Generic over S because we can build with a Sealed or NotSealed builder:
 impl<S> RequestBuilder<Url, Method, S> {
-    pub fn build(self) -> Result<Request, Box<dyn Error>> {
-        Ok(Request {
+    // build is now infallible, no need to return Result:
+    pub fn build(self) -> Request {
+        Request {
             url: self.url.0,  // from Url(String), which is the specific generic type
             method: self.method.0,  // from Method(String)
             headers: self.headers,
             body: self.body,
-        })
+        }
     }
 }
 
