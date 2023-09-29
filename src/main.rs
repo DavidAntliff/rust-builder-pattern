@@ -75,7 +75,8 @@ fn demo_type_state() -> Result<(), Box<dyn Error>> {
     use crate::request::request_builder_type_state::RequestBuilder;
 
     let req_builder = RequestBuilder::new()
-        //.url("https://some-url.com/task/123")
+        // commenting out the .url() will cause a compiler error:
+        .url("https://some-url.com/task/123")
         .method("GET");
 
     let req = req_builder
