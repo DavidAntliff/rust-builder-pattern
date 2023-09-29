@@ -81,11 +81,17 @@ fn demo_type_state() -> Result<(), Box<dyn Error>> {
         .method("GET")
         ;
 
-    let req = req_builder
+    let req_builder = req_builder
+        // uncommenting .seal() prevents .header() from being called:
         //.seal()
         .header("Token", "uuid.exp.sign")
-        .build()?;
+        .seal();
 
+    // .seal() plays nicely with .clone():
+    let req = req_builder.clone().build()?;
+    println!("{req:#?}");
+
+    let req = req_builder.build()?;
     println!("{req:#?}");
 
     Ok(())

@@ -8,6 +8,7 @@
 use std::result::Result;
 use std::error::Error;
 use crate::request::Request;
+use core::marker::PhantomData;
 
 // region: --- States
 // We can't use an 'enum' because we need two different types.
@@ -23,27 +24,52 @@ pub struct NoMethod;
 
 #[derive(Default, Clone)]
 pub struct Method(String);
+
+// A sealed builder can only have .build() and .clone() called on it.
+// Neither of these types have any data.
+#[derive(Default, Clone)]
+pub struct NotSealed;
+
+#[derive(Default, Clone)]
+pub struct Sealed;
 // endregion: --- States
 
 // Make the RequestBuilder generic over type U, which is the "url" type
 // To enforce "method", make it generic over M as well:
 #[derive(Default, Clone)]
-pub struct RequestBuilder<U, M> {
+pub struct RequestBuilder<U, M, S> {
     url: U,
     method: M,
     headers: Vec<(String, String)>,  // (name, value)
     body: Option<String>,
+
+    // We need PhantomData<S> to make use of S, otherwise S is unused and the code won't compile
+    marker_seal: PhantomData<S>,
 }
 
 // Implement new() for the NoUrl type
-impl RequestBuilder<NoUrl, NoMethod> {
+impl RequestBuilder<NoUrl, NoMethod, NotSealed> {
     pub fn new() -> Self {
         RequestBuilder::default()
     }
 }
 
-// Move RequestBuilder::build into a specialised case, and remove the run-time check:
-impl RequestBuilder<Url, Method> {
+// For any not-sealed U and M, implement .sealed():
+impl<U, M> RequestBuilder<U, M, NotSealed> {
+    pub fn seal(self) -> RequestBuilder<U, M, Sealed> {
+        RequestBuilder {
+            url: self.url,
+            method: self.method,
+            headers: self.headers,
+            body: self.body,
+            marker_seal: PhantomData,
+        }
+    }
+}
+
+// Move RequestBuilder::build into a specialised case, and remove the run-time check.
+// Generic over S because we can build with a Sealed or NotSealed builder:
+impl<S> RequestBuilder<Url, Method, S> {
     pub fn build(self) -> Result<Request, Box<dyn Error>> {
         Ok(Request {
             url: self.url.0,  // from Url(String), which is the specific generic type
@@ -54,24 +80,26 @@ impl RequestBuilder<Url, Method> {
     }
 }
 
-impl<U, M> RequestBuilder<U, M> {
+impl<U, M> RequestBuilder<U, M, NotSealed> {
 
     // Return type is now RequestBuilder<Url>
-    pub fn url(self, url: impl Into<String>) -> RequestBuilder<Url, M> {
+    pub fn url(self, url: impl Into<String>) -> RequestBuilder<Url, M, NotSealed> {
         RequestBuilder {
             url: Url(url.into()),
             method: self.method,
             headers: self.headers,
             body: self.body,
+            marker_seal: PhantomData,
         }
     }
 
-    pub fn method(self, method: impl Into<String>) -> RequestBuilder<U, Method> {
+    pub fn method(self, method: impl Into<String>) -> RequestBuilder<U, Method, NotSealed> {
         RequestBuilder {
             url: self.url,
             method: Method(method.into()),
             headers: self.headers,
             body: self.body,
+            marker_seal: PhantomData,
         }
     }
 
