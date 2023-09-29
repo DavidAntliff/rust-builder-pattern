@@ -1,19 +1,14 @@
-// https://www.youtube.com/watch?v=Z_3WOSiYYFY
+// Non-consuming - internal cloning
+// Best when no need to move the data to the target struct.
+//
+// Copy/paste target struct, and make all fields optional.
+// Derive Default.
+// Properties should not be public.
 
 use std::result::Result;
 use std::error::Error;
+use crate::request::Request;
 
-#[derive(Debug)]
-pub struct Request {
-    url: String,
-    method :String,
-    headers: Vec<(String, String)>,  // (name, value)
-    body: Option<String>,
-}
-
-// Copy/paste target struct, and make all fields optional
-// Derive Default.
-// Properties should not be public.
 #[derive(Default, Clone)]
 pub struct RequestBuilder {
     url: Option<String>,
@@ -27,31 +22,24 @@ impl RequestBuilder {
         RequestBuilder::default()
     }
 
-    // Non-consuming - internal cloning
-    // Best when no need to move the data to the target struct.
-
-    // non-consuming
     pub fn url(&mut self, url: impl Into<String>) -> &mut Self {
         //self.url = Some(url.into());
         let _ = self.url.insert(url.into());
         self
     }
 
-    // non-consuming
     pub fn method(&mut self, method: impl Into<String>) -> &mut Self {
         //self.method = Some(method.into());
         let _ = self.method.insert(method.into());
         self
     }
 
-    // non-consuming
     pub fn body(&mut self, body: impl Into<String>) -> &mut Self {
         //self.body = Some(body.into());
         let _ = self.body.insert(body.into());
         self
     }
 
-    // non-consuming
     pub fn header(
         &mut self,
         name: impl Into<String>,
@@ -77,47 +65,4 @@ impl RequestBuilder {
             body: self.body.clone(),
         })
     }
-
-    // Consuming
-    pub fn url_consuming(mut self, url: impl Into<String>) -> Self {
-        self.url = Some(url.into());
-        self
-    }
-
-    // Consuming
-    pub fn method_consuming(mut self, method: impl Into<String>) -> Self {
-        self.method = Some(method.into());
-        self
-    }
-
-    // Consuming
-    pub fn body_consuming(mut self, body: impl Into<String>) -> Self {
-        self.body = Some(body.into());
-        self
-    }
-
-    // Consuming
-    pub fn header_consuming(
-        mut self,
-        name: impl Into<String>,
-        value: impl Into<String>) -> Self {
-        self.headers.push((name.into(), value.into()));
-        self
-    }
-
-    // Consuming pattern - explicit clone, one fewer clone
-    pub fn build_consuming(self) -> Result<Request, Box<dyn Error>> {
-        let Some(url) = self.url else {
-            return Err("No URL".into());
-        };
-        let method = self.method.unwrap_or_else(|| "GET".to_string());
-
-        Ok(Request {
-            url,
-            method,
-            headers: self.headers,
-            body: self.body,
-        })
-    }
-
 }

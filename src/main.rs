@@ -1,10 +1,13 @@
+#![allow(dead_code)]
+
 mod task;
-mod web;
+mod request;
+mod request_builder_non_consuming;
+mod request_builder_consuming;
 
 use std::error::Error;
 use task::Task;
-use web::Request;
-use crate::web::RequestBuilder;
+
 
 fn task_demo() -> Result<(), Box<dyn Error>> {
     //let task = Task::new("Task 01");
@@ -19,17 +22,9 @@ fn task_demo() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn web_demo() -> Result<(), Box<dyn Error>> {
-    let req = RequestBuilder::new()
-        .url("https://some-url.com/task/123")
-        .method("GET")
-        .header("token", "user_uuid.exp.sign")
-        .build()?;
-    println!("{req:#?}");
-    Ok(())
-}
-
 fn web_demo_non_consuming() -> Result<(), Box<dyn Error>> {
+    use crate::request_builder_non_consuming::RequestBuilder;
+
     let mut req_builder = RequestBuilder::new();
     req_builder
         .url("https://some-url.com/task/123")
@@ -40,7 +35,8 @@ fn web_demo_non_consuming() -> Result<(), Box<dyn Error>> {
         .build()?;
     println!("1: {req:#?}");
 
-    // call the same builder multiple times
+    // Because the non-consuming builder performed a clone internally,
+    // you call the same builder multiple times:
     req_builder.header("Client-Version", "1.2");
     let req = req_builder.build()?;
     println!("2: {req:#?}");
@@ -49,21 +45,26 @@ fn web_demo_non_consuming() -> Result<(), Box<dyn Error>> {
 }
 
 fn web_demo_consuming() -> Result<(), Box<dyn Error>> {
+    use crate::request_builder_consuming::RequestBuilder;
+
     let req_builder = RequestBuilder::new()
-        .url_consuming("https://some-url.com/task/123")
-        .method_consuming("GET");
+        .url("https://some-url.com/task/123")
+        .method("GET");
     // do some stuff...
     let req_builder = req_builder
-        .header_consuming("token", "user_uuid.exp.sign");
+        .header("token", "user_uuid.exp.sign");
     // do more stuff...
+
+    // The main point of the consuming builder is that an explicit .clone() is
+    // needed if you want to use it multiple times:
     let req = req_builder
-        .clone().build_consuming()?;
+        .clone().build()?;
     println!("Consuming 1: {req:#?}");
 
     // call the same builder multiple times
     let req = req_builder
-        .header_consuming("Client-Version", "1.2")
-        .build_consuming()?;
+        .header("Client-Version", "1.2")
+        .build()?;
     println!("Consuming 2: {req:#?}");
 
     Ok(())
@@ -72,7 +73,6 @@ fn web_demo_consuming() -> Result<(), Box<dyn Error>> {
 fn main() -> Result<(), Box<dyn Error>> {
 
     //task_demo()
-    //web_demo()?;
     web_demo_non_consuming()?;
     web_demo_consuming()?;
 
