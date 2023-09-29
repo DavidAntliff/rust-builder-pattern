@@ -2,8 +2,6 @@
 
 mod task;
 mod request;
-mod request_builder_non_consuming;
-mod request_builder_consuming;
 
 use std::error::Error;
 use task::Task;
@@ -22,8 +20,9 @@ fn task_demo() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn web_demo_non_consuming() -> Result<(), Box<dyn Error>> {
-    use crate::request_builder_non_consuming::RequestBuilder;
+fn demo_non_consuming() -> Result<(), Box<dyn Error>> {
+    println!("Non-Consuming Builder:");
+    use crate::request::request_builder_non_consuming::RequestBuilder;
 
     let mut req_builder = RequestBuilder::new();
     req_builder
@@ -44,8 +43,9 @@ fn web_demo_non_consuming() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn web_demo_consuming() -> Result<(), Box<dyn Error>> {
-    use crate::request_builder_consuming::RequestBuilder;
+fn demo_consuming() -> Result<(), Box<dyn Error>> {
+    println!("Consuming Builder:");
+    use crate::request::request_builder_consuming::RequestBuilder;
 
     let req_builder = RequestBuilder::new()
         .url("https://some-url.com/task/123")
@@ -70,11 +70,30 @@ fn web_demo_consuming() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn demo_type_state() -> Result<(), Box<dyn Error>> {
+    println!("Type State Builder:");
+    use crate::request::request_builder_type_state::RequestBuilder;
+
+    let req_builder = RequestBuilder::new()
+        //.url("https://some-url.com/task/123")
+        .method("GET");
+
+    let req = req_builder
+        //.seal()
+        .header("Token", "uuid.exp.sign")
+        .build()?;
+
+    println!("{req:#?}");
+
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
 
     //task_demo()
-    web_demo_non_consuming()?;
-    web_demo_consuming()?;
+    demo_non_consuming()?;
+    demo_consuming()?;
+    demo_type_state()?;
 
     Ok(())
 }
